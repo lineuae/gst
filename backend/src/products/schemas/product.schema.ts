@@ -17,6 +17,9 @@ export class Product {
   @Prop()
   description?: string;
 
+  @Prop({ type: String, required: false })
+  categoryId?: string;
+
   @Prop({ default: true })
   isActive: boolean;
 }

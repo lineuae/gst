@@ -94,9 +94,14 @@ export default function DashboardPage() {
                 </Link>
               )}
               {user?.role === "manager" && (
-                <Link href="/admin-users" className="hover:text-slate-900">
-                  Admins
-                </Link>
+                <>
+                  <Link href="/categories" className="hover:text-slate-900">
+                    Catégories
+                  </Link>
+                  <Link href="/admin-users" className="hover:text-slate-900">
+                    Admins
+                  </Link>
+                </>
               )}
             </nav>
             <div className="flex items-center gap-2 text-xs text-slate-600">

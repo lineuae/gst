@@ -338,6 +338,28 @@ function filterSalesByPeriod(sales: Sale[], period: PeriodKey): Sale[] {
   });
 }
 
+function downloadCsv(filename: string, rows: string[][]) {
+  const csvContent = rows
+    .map((row) =>
+      row
+        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+        .join(";"),
+    )
+    .join("\n");
+
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
   if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -349,6 +371,21 @@ function filterSalesByPeriod(sales: Sale[], period: PeriodKey): Sale[] {
   }
 
   const filteredSales = filterSalesByPeriod(sales, salesPeriod);
+
+  const handleExportSalesCsv = () => {
+    if (filteredSales.length === 0) return;
+    const headers = ["Date", "Montant total (FCFA)"];
+    const dataRows = filteredSales.map((s) => [
+      new Date(s.createdAt).toLocaleString(),
+      s.totalAmount.toFixed(2),
+    ]);
+    downloadCsv("ventes.csv", [headers, ...dataRows]);
+  };
+
+  const filteredSalesTotal = filteredSales.reduce(
+    (sum, s) => sum + s.totalAmount,
+    0,
+  );
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -551,14 +588,59 @@ function filterSalesByPeriod(sales: Sale[], period: PeriodKey): Sale[] {
         </section>
 
         <section className="mt-6 rounded-xl bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-800">
-            Historique des ventes
-          </h2>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-800">
+              Historique des ventes
+            </h2>
+            {filteredSales.length > 0 && (
+              <button
+                onClick={handleExportSalesCsv}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Exporter CSV
+              </button>
+            )}
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {SALES_PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.key}
+                onClick={() => setSalesPeriod(opt.key)}
+                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                  salesPeriod === opt.key
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {filteredSales.length > 0 && (
+            <div className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+              <span className="font-medium text-slate-800">
+                {filteredSales.length} vente
+                {filteredSales.length > 1 ? "s" : ""}
+              </span>{" "}
+              sur la période sélectionnée –
+              <span className="ml-1 font-semibold text-emerald-700">
+                {filteredSalesTotal.toFixed(2)} FCFA
+              </span>
+              .
+            </div>
+          )}
+
           {loadingSales ? (
             <p className="text-sm text-slate-500">Chargement des ventes...</p>
           ) : sales.length === 0 ? (
             <p className="text-sm text-slate-500">
               Aucune vente enregistrée pour le moment.
+            </p>
+          ) : filteredSales.length === 0 ? (
+            <p className="text-sm text-slate-500">
+              Aucune vente pour cette période.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -571,12 +653,20 @@ function filterSalesByPeriod(sales: Sale[], period: PeriodKey): Sale[] {
                   </tr>
                 </thead>
                 <tbody>
-                  {sales.map((s) => (
-                    <tr key={s._id} className="border-b last:border-0">
-                      <td className="px-3 py-2 text-slate-700">
-                        {new Date(s.createdAt).toLocaleString()}
+                  {filteredSales.map((s, index) => (
+                    <tr
+                      key={s._id}
+                      className="border-b last:border-0 hover:bg-slate-50"
+                    >
+                      <td className="px-3 py-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-600">
+                            {index + 1}
+                          </span>
+                          <span>{new Date(s.createdAt).toLocaleString()}</span>
+                        </div>
                       </td>
-                      <td className="px-3 py-2 text-slate-700">
+                      <td className="px-3 py-2 text-sm font-semibold text-emerald-700">
                         {s.totalAmount.toFixed(2)} FCFA
                       </td>
                       <td className="px-3 py-2">

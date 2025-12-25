@@ -12,6 +12,7 @@ export interface CreateFinancialEntryInput {
   type: FinancialEntryType;
   amount: number;
   category: string;
+  categoryId?: string;
   description?: string;
   userId?: string;
 }

@@ -11,6 +11,14 @@ type Product = {
   price: number;
   imageUrl?: string;
   description?: string;
+  categoryId?: string;
+  isActive: boolean;
+};
+
+type ProductCategory = {
+  _id: string;
+  name: string;
+  color?: string;
   isActive: boolean;
 };
 
@@ -42,12 +50,15 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
     name: "",
     price: "",
     imageUrl: "",
     description: "",
+    categoryId: "",
     isActive: true,
   });
 
@@ -55,6 +66,7 @@ export default function ProductsPage() {
     name: "",
     price: "",
     description: "",
+    categoryId: "",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -102,9 +114,29 @@ export default function ProductsPage() {
     }
   };
 
+  const fetchCategories = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_BASE}/product-categories`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error("Impossible de charger les catégories");
+      }
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      // On ne bloque pas la page produits si les catégories échouent
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     if (ready) {
       fetchProducts();
+      fetchCategories();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
@@ -142,12 +174,13 @@ export default function ProductsPage() {
           price: Number(form.price),
           imageUrl,
           description: form.description || undefined,
+          categoryId: form.categoryId || undefined,
         }),
       });
       if (!res.ok) {
         throw new Error("Erreur lors de la création du produit");
       }
-      setForm({ name: "", price: "", description: "" });
+      setForm({ name: "", price: "", description: "", categoryId: "" });
       setImageFile(null);
       await fetchProducts();
     } catch (err: any) {
@@ -179,6 +212,7 @@ export default function ProductsPage() {
       price: String(product.price),
       imageUrl: product.imageUrl || "",
       description: product.description || "",
+       categoryId: product.categoryId || "",
       isActive: product.isActive,
     });
   };
@@ -219,6 +253,7 @@ export default function ProductsPage() {
           price: Number(editForm.price),
           imageUrl,
           description: editForm.description || undefined,
+          categoryId: editForm.categoryId || undefined,
           isActive: editForm.isActive,
         }),
       });
@@ -295,20 +330,62 @@ export default function ProductsPage() {
                 required
               />
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">
+                Catégorie (optionnel)
+              </label>
+              <select
+                value={form.categoryId}
+                onChange={(e) =>
+                  setForm({ ...form, categoryId: e.target.value })
+                }
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+              >
+                <option value="">Aucune</option>
+                {categories.map((c) => (
+                  <option key={c._id} value={c._id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-700">
-                Image du produit (optionnel)
+                Photo du produit (optionnel)
               </label>
               <input
+                id="product-image-file"
                 type="file"
                 accept="image/*"
                 onChange={(e) =>
-                  setImageFile(e.target.files && e.target.files[0]
-                    ? e.target.files[0]
-                    : null)
+                  setImageFile(
+                    e.target.files && e.target.files[0]
+                      ? e.target.files[0]
+                      : null,
+                  )
                 }
-                className="w-full text-xs text-slate-700"
+                className="hidden"
               />
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById(
+                    "product-image-file",
+                  ) as HTMLInputElement | null;
+                  input?.click();
+                }}
+                className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+              >
+                Choisir une image…
+              </button>
+              <p className="mt-1 text-xs text-slate-500">
+                {imageFile
+                  ? `Fichier sélectionné : ${imageFile.name}`
+                  : "Aucun fichier sélectionné"}
+              </p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Formats acceptés : JPG, PNG – max 5 Mo.
+              </p>
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-700">
@@ -382,6 +459,38 @@ export default function ProductsPage() {
                               />
                             ) : (
                               <span>{p.name}</span>
+                            )}
+                            {!editingId &&
+                              p.categoryId &&
+                              (() => {
+                                const cat = categories.find(
+                                  (c) => c._id === p.categoryId,
+                                );
+                                if (!cat) return null;
+                                return (
+                                  <span className="mt-1 inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                                    {cat.name}
+                                  </span>
+                                );
+                              })()}
+                            {editingId === p._id && (
+                              <select
+                                value={editForm.categoryId}
+                                onChange={(e) =>
+                                  setEditForm({
+                                    ...editForm,
+                                    categoryId: e.target.value,
+                                  })
+                                }
+                                className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                              >
+                                <option value="">Aucune catégorie</option>
+                                {categories.map((c) => (
+                                  <option key={c._id} value={c._id}>
+                                    {c.name}
+                                  </option>
+                                ))}
+                              </select>
                             )}
                             {editingId === p._id && (
                               <input

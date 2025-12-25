@@ -19,6 +19,9 @@ export class FinancialEntry {
   @Prop({ required: true })
   category: string;
 
+  @Prop({ type: String, required: false })
+  categoryId?: string;
+
   @Prop()
   description?: string;
 
