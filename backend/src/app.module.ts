@@ -16,7 +16,11 @@ import { FinanceModule } from './finance/finance.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    MongooseModule.forRoot(process.env.MONGODB_URI as string),
+    MongooseModule.forRoot(
+      (process.env.NODE_ENV === 'production'
+        ? process.env.MONGODB_URI_PROD || process.env.MONGODB_URI
+        : process.env.MONGODB_URI_DEV || process.env.MONGODB_URI) as string,
+    ),
     UsersModule,
     AuthModule,
     ProductsModule,

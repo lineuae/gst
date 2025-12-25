@@ -161,7 +161,7 @@ export default function ProductsPage() {
           throw new Error("Erreur lors de l'upload de l'image");
         }
         const uploadData = await uploadRes.json();
-        imageUrl = `${API_BASE}${uploadData.imagePath}`;
+        imageUrl = uploadData.imagePath;
       }
       const res = await fetch(`${API_BASE}/products`, {
         method: "POST",
@@ -212,7 +212,7 @@ export default function ProductsPage() {
       price: String(product.price),
       imageUrl: product.imageUrl || "",
       description: product.description || "",
-       categoryId: product.categoryId || "",
+      categoryId: product.categoryId || "",
       isActive: product.isActive,
     });
   };
@@ -240,7 +240,7 @@ export default function ProductsPage() {
           throw new Error("Erreur lors de l'upload de la nouvelle image");
         }
         const uploadData = await uploadRes.json();
-        imageUrl = `${API_BASE}${uploadData.imagePath}`;
+        imageUrl = uploadData.imagePath;
       }
       const res = await fetch(`${API_BASE}/products/${product._id}`, {
         method: "PATCH",
