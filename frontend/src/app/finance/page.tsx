@@ -201,7 +201,7 @@ export default function FinancePage() {
     categoryId: "",
   });
 
-  const [period, setPeriod] = useState<PeriodKey>("this_month");
+  const [period, setPeriod] = useState<PeriodKey>("today");
 
   const [user, setUser] = useState<StoredUser | null>(null);
   const [form, setForm] = useState({

@@ -28,19 +28,19 @@ class CreateFinancialEntryDto {
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Post('entries')
   createEntry(@Body() dto: CreateFinancialEntryDto) {
     return this.financeService.createEntry(dto);
   }
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Get('entries')
   listEntries() {
     return this.financeService.listEntries();
   }
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Patch('entries/:id')
   updateEntry(
     @Param('id') id: string,
@@ -61,7 +61,7 @@ export class FinanceController {
     return this.financeService.resetAll();
   }
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Get('dashboard')
   async getDashboard(
     @Query('from') from?: string,

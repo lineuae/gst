@@ -17,7 +17,7 @@ class AdjustStockDto {
 export class StockController {
   constructor(private readonly stockService: StockService) {}
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Post('adjust')
   adjust(@Body() dto: AdjustStockDto) {
     const type = StockMovementType.ManualAdjustment;
@@ -29,8 +29,15 @@ export class StockController {
     });
   }
 
+  @Roles(UserRole.Manager)
   @Get('product/:productId')
   getStock(@Param('productId') productId: string) {
     return this.stockService.getStockForProduct(productId);
+  }
+
+  @Roles(UserRole.Manager)
+  @Get('low-stock')
+  getLowStock() {
+    return this.stockService.getLowStockProducts({ min: 0, max: 10 });
   }
 }

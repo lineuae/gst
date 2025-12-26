@@ -6,11 +6,13 @@ import {
   StockMovement,
   StockMovementSchema,
 } from './schemas/stock-movement.schema';
+import { Product, ProductSchema } from '../products/schemas/product.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: StockMovement.name, schema: StockMovementSchema },
+      { name: Product.name, schema: ProductSchema },
     ]),
   ],
   providers: [StockService],

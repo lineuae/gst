@@ -39,13 +39,13 @@ class UpdateProductDto {
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.productsService.create(dto);
   }
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Post('upload-image')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -71,23 +71,25 @@ export class ProductsController {
     return { imagePath: dataUrl };
   }
 
+  @Roles(UserRole.Manager)
   @Get()
   findAll() {
     return this.productsService.findAll();
   }
 
+  @Roles(UserRole.Manager)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
   }
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
     return this.productsService.update(id, dto);
   }
 
-  @Roles(UserRole.Manager, UserRole.Admin)
+  @Roles(UserRole.Manager)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);

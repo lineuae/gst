@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards, Req } from '@nestjs/common';
 import { SalesService } from './sales.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { UserRole } from '../users/schemas/user.schema';
+import { PaymentMethod } from './schemas/sale.schema';
 
 class CreateSaleItemDto {
   productId: string;
@@ -13,6 +14,7 @@ class CreateSaleItemDto {
 
 class CreateSaleDto {
   items: CreateSaleItemDto[];
+  paymentMethod: PaymentMethod;
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -21,9 +23,12 @@ export class SalesController {
   constructor(private readonly salesService: SalesService) {}
 
   @Post()
-  create(@Body() dto: CreateSaleDto) {
+  create(@Body() dto: CreateSaleDto, @Req() req: any) {
     return this.salesService.createSale({
       items: dto.items,
+      userId: req.user?.userId,
+      username: req.user?.username,
+      paymentMethod: dto.paymentMethod,
     });
   }
 

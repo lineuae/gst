@@ -20,10 +20,22 @@ type SaleItem = {
   productImageUrl?: string; // miniature pour l’UI
 };
 
+type PaymentMethod = "cash" | "wave" | "card";
+
 type Sale = {
   _id: string;
   totalAmount: number;
   createdAt: string;
+  paymentMethod?: PaymentMethod;
+  username?: string;
+  items?: {
+    product?: {
+      name?: string;
+      price?: number;
+    };
+    quantity: number;
+    unitPrice: number;
+  }[];
 };
 
 type PeriodKey =
@@ -81,7 +93,9 @@ export default function SalesPage() {
   const [saving, setSaving] = useState(false);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loadingSales, setLoadingSales] = useState(false);
-  const [salesPeriod, setSalesPeriod] = useState<PeriodKey>("this_month");
+  const [salesPeriod, setSalesPeriod] = useState<PeriodKey>("today");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+  const [receiptSale, setReceiptSale] = useState<Sale | null>(null);
 
   const router = useRouter();
   const token =
@@ -213,12 +227,14 @@ export default function SalesPage() {
             quantity: i.quantity,
             unitPrice: i.unitPrice,
           })),
+          paymentMethod,
         }),
       });
       if (!res.ok) {
         throw new Error("Erreur lors de l'enregistrement de la vente");
       }
       setItems([]);
+      setPaymentMethod("cash");
       alert("Vente enregistrée et stock mis à jour.");
       await fetchSales();
     } catch (err: any) {
@@ -360,6 +376,12 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url);
 }
 
+function formatPaymentMethodLabel(method?: PaymentMethod): string {
+  if (method === "wave") return "Wave";
+  if (method === "card") return "Carte bancaire";
+  return "Espèces";
+}
+
   if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -374,10 +396,15 @@ function downloadCsv(filename: string, rows: string[][]) {
 
   const handleExportSalesCsv = () => {
     if (filteredSales.length === 0) return;
-    const headers = ["Date", "Montant total (FCFA)"];
+    const headers = ["Date", "Montant total (FCFA)", "Mode de paiement"];
     const dataRows = filteredSales.map((s) => [
       new Date(s.createdAt).toLocaleString(),
       s.totalAmount.toFixed(2),
+      s.paymentMethod === "wave"
+        ? "Wave"
+        : s.paymentMethod === "card"
+        ? "Carte bancaire"
+        : "Espèces",
     ]);
     downloadCsv("ventes.csv", [headers, ...dataRows]);
   };
@@ -389,7 +416,7 @@ function downloadCsv(filename: string, rows: string[][]) {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <main className="mx-auto max-w-5xl px-4 py-6">
+      <main className="sales-page-main mx-auto max-w-5xl px-4 py-6">
         <header className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-slate-900">Ventes</h1>
@@ -561,13 +588,53 @@ function downloadCsv(filename: string, rows: string[][]) {
                 </table>
               </div>
               <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="rounded-lg bg-emerald-50 px-4 py-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
-                    Total de la vente
-                  </p>
-                  <p className="text-lg font-bold text-emerald-800">
-                    {total.toFixed(2)} FCFA
-                  </p>
+                <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="rounded-lg bg-emerald-50 px-4 py-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">
+                      Total de la vente
+                    </p>
+                    <p className="text-lg font-bold text-emerald-800">
+                      {total.toFixed(2)} FCFA
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1 text-xs text-slate-700">
+                    <span className="font-medium">Mode de paiement</span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("cash")}
+                        className={`rounded-full px-3 py-1 border text-xs font-medium transition-colors ${
+                          paymentMethod === "cash"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        Espèces
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("wave")}
+                        className={`rounded-full px-3 py-1 border text-xs font-medium transition-colors ${
+                          paymentMethod === "wave"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        Wave
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMethod("card")}
+                        className={`rounded-full px-3 py-1 border text-xs font-medium transition-colors ${
+                          paymentMethod === "card"
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        Carte bancaire
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <button
                   onClick={handleSaveSale}
@@ -648,7 +715,9 @@ function downloadCsv(filename: string, rows: string[][]) {
                 <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500">
                   <tr>
                     <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Utilisateur</th>
                     <th className="px-3 py-2">Montant total</th>
+                    <th className="px-3 py-2">Mode de paiement</th>
                     <th className="px-3 py-2">Actions</th>
                   </tr>
                 </thead>
@@ -666,18 +735,32 @@ function downloadCsv(filename: string, rows: string[][]) {
                           <span>{new Date(s.createdAt).toLocaleString()}</span>
                         </div>
                       </td>
+                      <td className="px-3 py-2 text-xs text-slate-700">
+                        {s.username || "-"}
+                      </td>
                       <td className="px-3 py-2 text-sm font-semibold text-emerald-700">
                         {s.totalAmount.toFixed(2)} FCFA
                       </td>
+                      <td className="px-3 py-2 text-xs text-slate-700">
+                        {formatPaymentMethodLabel(s.paymentMethod)}
+                      </td>
                       <td className="px-3 py-2">
-                        {isManager && (
+                        <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleDeleteSale(s._id)}
-                            className="text-xs font-medium text-red-600 hover:underline"
+                            onClick={() => setReceiptSale(s)}
+                            className="text-xs font-medium text-slate-700 hover:underline"
                           >
-                            Supprimer
+                            Reçu
                           </button>
-                        )}
+                          {isManager && (
+                            <button
+                              onClick={() => handleDeleteSale(s._id)}
+                              className="text-xs font-medium text-red-600 hover:underline"
+                            >
+                              Supprimer
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -687,6 +770,172 @@ function downloadCsv(filename: string, rows: string[][]) {
           )}
         </section>
       </main>
+
+      {receiptSale && (
+        <>
+          <style jsx global>{`
+            @media print {
+              @page {
+                size: 80mm 210mm;
+                margin: 2mm;
+              }
+              html,
+              body {
+                margin: 0;
+                padding: 0;
+                height: auto;
+              }
+              .min-h-screen {
+                min-height: auto !important;
+              }
+              .sales-page-main {
+                display: none !important;
+              }
+              .receipt-overlay {
+                position: static !important;
+                inset: auto !important;
+                background: transparent !important;
+                padding: 0 !important;
+                display: block !important;
+                align-items: flex-start !important;
+                justify-content: flex-start !important;
+              }
+              .receipt-print {
+                position: static !important;
+                inset: auto !important;
+                max-width: 80mm !important;
+                width: 80mm !important;
+                margin: 0 auto !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                border: 1px solid #000 !important;
+                padding: 4mm 3mm 5mm 3mm !important;
+                page-break-before: avoid;
+                page-break-after: auto;
+              }
+              .receipt-actions {
+                display: none !important;
+              }
+            }
+          `}</style>
+          <div className="receipt-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="receipt-print w-full max-w-md rounded-lg bg-white shadow-lg">
+            <div className="border-b px-4 py-3 text-center">
+              <div className="mx-auto mb-1 flex items-center justify-center gap-2">
+                <div className="h-10 w-10 overflow-hidden rounded-full border border-slate-200 bg-white">
+                  <img
+                    src="/logo-fk-pack-events.jpg"
+                    alt="FK Pack Event's"
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-base font-bold tracking-wide text-slate-900">
+                    FK Pack Event&apos;s
+                  </h2>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Reçu de vente
+                  </p>
+                </div>
+              </div>
+              <p className="mt-1 text-[11px] font-medium text-slate-700">
+                Dakar HLM 6 nimzatt et Saint-Louis HLM Léona 2 N°312
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-slate-700">
+                Tél : 00 221 78 600 05 25 • NINEA : 011397347
+              </p>
+            </div>
+            <div className="px-4 py-3 text-xs text-slate-800">
+              <div className="flex justify-between">
+                <span className="font-semibold">Date :</span>
+                <span className="font-medium">
+                  {new Date(receiptSale.createdAt).toLocaleString()}
+                </span>
+              </div>
+              <div className="mt-1 flex justify-between">
+                <span className="font-semibold">Vendu par :</span>
+                <span className="font-semibold">
+                  {receiptSale.username || "-"}
+                </span>
+              </div>
+              <div className="mt-1 flex justify-between">
+                <span className="font-semibold">Mode de paiement :</span>
+                <span className="font-semibold">
+                  {formatPaymentMethodLabel(receiptSale.paymentMethod)}
+                </span>
+              </div>
+            </div>
+            <div className="mx-6 my-2 border-t" />
+            <div className="px-4 pb-3 pt-1 text-xs text-slate-800">
+              {receiptSale.items && receiptSale.items.length > 0 ? (
+                <table className="w-full text-left text-[11px]">
+                  <thead className="border-b bg-slate-50 text-[10px] uppercase text-slate-600">
+                    <tr>
+                      <th className="px-1 py-1 font-semibold">Article</th>
+                      <th className="px-1 py-1 text-right font-semibold">Qté</th>
+                      <th className="px-1 py-1 text-right font-semibold">PU</th>
+                      <th className="px-1 py-1 text-right font-semibold">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receiptSale.items.map((item, idx) => {
+                      const name = item.product?.name || `Article ${idx + 1}`;
+                      const unit = item.unitPrice ?? item.product?.price ?? 0;
+                      const line = unit * item.quantity;
+                      return (
+                        <tr key={idx} className="border-b last:border-0">
+                          <td className="px-1 py-1 pr-2 align-top font-medium text-slate-900">
+                            {name}
+                          </td>
+                          <td className="px-1 py-1 text-right font-medium">
+                            {item.quantity}
+                          </td>
+                          <td className="px-1 py-1 text-right font-medium">
+                            {unit.toFixed(2)}
+                          </td>
+                          <td className="px-1 py-1 text-right font-semibold">
+                            {line.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-[11px] text-slate-500">
+                  Détails de la vente non disponibles.
+                </p>
+              )}
+              <div className="mt-3 border-t pt-2 text-xs">
+                <div className="flex justify-between text-slate-900">
+                  <span className="font-bold">Total TTC</span>
+                  <span className="font-bold">{receiptSale.totalAmount.toFixed(2)} FCFA</span>
+                </div>
+              </div>
+              <p className="mt-3 text-center text-[10px] text-slate-500">
+                Merci pour votre confiance et à très bientôt chez FK Pack Event&apos;s.
+              </p>
+            </div>
+            <div className="receipt-actions flex justify-end gap-2 border-t bg-slate-50 px-6 py-3">
+              <button
+                type="button"
+                onClick={() => setReceiptSale(null)}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Fermer
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+              >
+                Imprimer
+              </button>
+            </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

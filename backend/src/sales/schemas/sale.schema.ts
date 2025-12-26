@@ -1,6 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+export enum PaymentMethod {
+  Cash = 'cash',
+  Wave = 'wave',
+  Card = 'card',
+}
+
 export type SaleDocument = Sale & Document;
 
 @Schema({ timestamps: true })
@@ -27,6 +33,12 @@ export class Sale {
 
   @Prop({ type: String, required: false })
   userId?: string;
+
+  @Prop({ type: String, required: false })
+  username?: string;
+
+  @Prop({ enum: PaymentMethod, required: true })
+  paymentMethod: PaymentMethod;
 }
 
 export const SaleSchema = SchemaFactory.createForClass(Sale);

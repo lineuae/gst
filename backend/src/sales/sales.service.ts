@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Sale, SaleDocument } from './schemas/sale.schema';
+import { PaymentMethod, Sale, SaleDocument } from './schemas/sale.schema';
 import { StockService } from '../stock/stock.service';
 import { StockMovementType } from '../stock/schemas/stock-movement.schema';
 
@@ -14,6 +14,8 @@ export interface CreateSaleItemInput {
 export interface CreateSaleInput {
   items: CreateSaleItemInput[];
   userId?: string;
+  paymentMethod: PaymentMethod;
+  username?: string;
 }
 
 @Injectable()
@@ -40,6 +42,8 @@ export class SalesService {
       items,
       totalAmount,
       userId: input.userId,
+      username: input.username,
+      paymentMethod: input.paymentMethod,
     });
 
     const saved = await sale.save();
@@ -59,7 +63,11 @@ export class SalesService {
   }
 
   async listSales(): Promise<SaleDocument[]> {
-    return this.saleModel.find().sort({ createdAt: -1 }).exec();
+    return this.saleModel
+      .find()
+      .sort({ createdAt: -1 })
+      .populate('items.product', 'name price')
+      .exec();
   }
 
   async deleteSale(id: string): Promise<void> {

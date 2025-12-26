@@ -52,6 +52,10 @@ export default function DashboardPage() {
     );
   }
 
+  const role = user?.role;
+
+  const isManager = role === "manager";
+
   return (
     <div className="min-h-screen bg-slate-100">
       <header className="border-b bg-white/90 backdrop-blur">
@@ -79,21 +83,28 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-4">
             <nav className="flex items-center gap-3 text-sm text-slate-700">
-              <Link href="/products" className="hover:text-slate-900">
-                Produits
-              </Link>
-              <Link href="/stock" className="hover:text-slate-900">
-                Stock
-              </Link>
+              {isManager && (
+                <>
+                  <Link href="/products" className="hover:text-slate-900">
+                    Produits
+                  </Link>
+                  <Link href="/stock" className="hover:text-slate-900">
+                    Stock
+                  </Link>
+                  <Link href="/orders" className="hover:text-slate-900">
+                    Commandes à faire
+                  </Link>
+                </>
+              )}
               <Link href="/sales" className="hover:text-slate-900">
                 Ventes
               </Link>
-              {(user?.role === "admin" || user?.role === "manager") && (
+              {isManager && (
                 <Link href="/finance" className="hover:text-slate-900">
                   Finances
                 </Link>
               )}
-              {user?.role === "manager" && (
+              {isManager && (
                 <>
                   <Link href="/categories" className="hover:text-slate-900">
                     Catégories
@@ -122,36 +133,55 @@ export default function DashboardPage() {
       </header>
       <main className="mx-auto max-w-5xl px-4 py-6">
         <div className="grid gap-4 md:grid-cols-4">
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase text-slate-500">
-              Produits
-            </p>
-            <p className="mt-2 text-sm text-slate-700">
-              Gérez le catalogue (noms, prix, images) et activez/désactivez les
-              produits.
-            </p>
-            <Link
-              href="/products"
-              className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
-            >
-              Accéder à la gestion des produits →
-            </Link>
-          </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase text-slate-500">
-              Stock
-            </p>
-            <p className="mt-2 text-sm text-slate-700">
-              Ajustez manuellement le stock et consultez les quantités
-              disponibles.
-            </p>
-            <Link
-              href="/stock"
-              className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
-            >
-              Accéder à la gestion des stocks →
-            </Link>
-          </div>
+          {isManager && (
+            <>
+              <div className="rounded-xl bg-white p-4 shadow-sm">
+                <p className="text-xs font-medium uppercase text-slate-500">
+                  Produits
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  Gérez le catalogue (noms, prix, images) et activez/désactivez les
+                  produits.
+                </p>
+                <Link
+                  href="/products"
+                  className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
+                >
+                  Accéder à la gestion des produits →
+                </Link>
+              </div>
+              <div className="rounded-xl bg-white p-4 shadow-sm">
+                <p className="text-xs font-medium uppercase text-slate-500">
+                  Stock
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  Ajustez manuellement le stock et consultez les quantités
+                  disponibles.
+                </p>
+                <Link
+                  href="/stock"
+                  className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
+                >
+                  Accéder à la gestion des stocks →
+                </Link>
+              </div>
+              <div className="rounded-xl bg-white p-4 shadow-sm">
+                <p className="text-xs font-medium uppercase text-slate-500">
+                  Commandes à faire
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  Visualisez rapidement les produits en stock faible et préparez
+                  vos commandes fournisseurs.
+                </p>
+                <Link
+                  href="/orders"
+                  className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
+                >
+                  Voir les produits à commander →
+                </Link>
+              </div>
+            </>
+          )}
           <div className="rounded-xl bg-white p-4 shadow-sm">
             <p className="text-xs font-medium uppercase text-slate-500">
               Ventes
@@ -166,20 +196,22 @@ export default function DashboardPage() {
               Accéder à la gestion des ventes →
             </Link>
           </div>
-          <div className="rounded-xl bg-white p-4 shadow-sm">
-            <p className="text-xs font-medium uppercase text-slate-500">
-              Finances
-            </p>
-            <p className="mt-2 text-sm text-slate-700">
-              Suivi des ventes, revenus et mouvements financiers.
-            </p>
-            <Link
-              href="/finance"
-              className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
-            >
-              Ouvrir le tableau de bord financier →
-            </Link>
-          </div>
+          {isManager && (
+            <div className="rounded-xl bg-white p-4 shadow-sm">
+              <p className="text-xs font-medium uppercase text-slate-500">
+                Finances
+              </p>
+              <p className="mt-2 text-sm text-slate-700">
+                Suivi des ventes, revenus et mouvements financiers.
+              </p>
+              <Link
+                href="/finance"
+                className="mt-3 inline-flex text-xs font-semibold text-slate-900 hover:underline"
+              >
+                Ouvrir le tableau de bord financier →
+              </Link>
+            </div>
+          )}
         </div>
       </main>
     </div>
