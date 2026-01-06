@@ -18,6 +18,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { UserRole } from '../users/schemas/user.schema';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import sharp from 'sharp';
 
 class CreateProductDto {
   name: string;
@@ -59,15 +60,36 @@ export class ProductsController {
         }
         cb(null, true);
       },
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
-  uploadImage(@UploadedFile() file: any) {
+  async uploadImage(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('Aucun fichier reçu');
     }
-    const base64 = file.buffer.toString('base64');
-    const dataUrl = `data:${file.mimetype};base64,${base64}`;
+    // Compression automatique avec sharp : redimensionner à max 1200px, qualité ~80%
+    const maxDimension = 1200;
+    const image = sharp(file.buffer).rotate(); // orientation automatique
+    const metadata = await image.metadata();
+
+    let pipeline = image;
+    if (
+      metadata.width &&
+      metadata.height &&
+      (metadata.width > maxDimension || metadata.height > maxDimension)
+    ) {
+      pipeline = pipeline.resize({
+        width: maxDimension,
+        height: maxDimension,
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
+    }
+
+    // On convertit en JPEG compressé pour un bon ratio poids/qualité
+    const compressedBuffer = await pipeline.jpeg({ quality: 80 }).toBuffer();
+    const base64 = compressedBuffer.toString('base64');
+    const dataUrl = `data:image/jpeg;base64,${base64}`;
     return { imagePath: dataUrl };
   }
 
