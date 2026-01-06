@@ -146,6 +146,13 @@ export default function ProductsPage() {
     if (!token) return;
     setError(null);
     try {
+      const normalizedPrice = Number(
+        (form.price || "").toString().replace(',', '.').trim(),
+      );
+      if (!normalizedPrice || isNaN(normalizedPrice) || normalizedPrice <= 0) {
+        setError("Le prix saisi est invalide. Utilisez un nombre (ex: 1500 ou 1500.5).");
+        return;
+      }
       let imageUrl: string | undefined = undefined;
       if (imageFile) {
         const fd = new FormData();
@@ -171,14 +178,15 @@ export default function ProductsPage() {
         },
         body: JSON.stringify({
           name: form.name,
-          price: Number(form.price),
+          price: normalizedPrice,
           imageUrl,
           description: form.description || undefined,
           categoryId: form.categoryId || undefined,
         }),
       });
       if (!res.ok) {
-        throw new Error("Erreur lors de la création du produit");
+        const text = await res.text();
+        throw new Error(text || "Erreur lors de la création du produit");
       }
       setForm({ name: "", price: "", description: "", categoryId: "" });
       setImageFile(null);
@@ -225,6 +233,13 @@ export default function ProductsPage() {
     if (!token) return;
     setError(null);
     try {
+      const normalizedPrice = Number(
+        (editForm.price || "").toString().replace(',', '.').trim(),
+      );
+      if (!normalizedPrice || isNaN(normalizedPrice) || normalizedPrice <= 0) {
+        setError("Le prix saisi est invalide. Utilisez un nombre (ex: 1500 ou 1500.5).");
+        return;
+      }
       let imageUrl: string | undefined = product.imageUrl;
       if (editImageFile) {
         const fd = new FormData();
@@ -250,7 +265,7 @@ export default function ProductsPage() {
         },
         body: JSON.stringify({
           name: editForm.name,
-          price: Number(editForm.price),
+          price: normalizedPrice,
           imageUrl,
           description: editForm.description || undefined,
           categoryId: editForm.categoryId || undefined,
@@ -273,6 +288,16 @@ export default function ProductsPage() {
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
         <div className="rounded-lg bg-white px-6 py-4 shadow-sm">
           <p className="text-sm text-slate-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user && user.role !== "manager") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100">
+        <div className="rounded-lg bg-white px-6 py-4 shadow-sm">
+          <p className="text-sm text-slate-600">Accès réservé au gérant.</p>
         </div>
       </div>
     );

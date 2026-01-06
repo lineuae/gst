@@ -7,12 +7,24 @@ import {
 } from './schemas/product-category.schema';
 
 const DEFAULT_PRODUCT_CATEGORIES: Array<Partial<ProductCategory>> = [
-  { name: 'Boîtes / coffrets', color: '#0ea5e9', isActive: true },
-  { name: 'Sacs / pochettes', color: '#22c55e', isActive: true },
-  { name: 'Rubans / nœuds', color: '#6366f1', isActive: true },
-  { name: 'Décoration de table', color: '#f97316', isActive: true },
-  { name: 'Décoration salle', color: '#a855f7', isActive: true },
-  { name: 'Accessoires divers', color: '#64748b', isActive: true },
+  { name: 'Packaging', isActive: true },
+  { name: 'Bouteilles', isActive: true },
+  { name: 'Barquette', isActive: true },
+  { name: 'Box et sachets beignets', isActive: true },
+  { name: 'Décoration', isActive: true },
+  { name: 'Vaisselle', isActive: true },
+  { name: 'Rubans', isActive: true },
+  { name: 'Gobelet', isActive: true },
+  { name: 'Couvert F-C-C🥄🍴', isActive: true },
+  { name: 'Déco modèle', isActive: true },
+  { name: 'Verine', isActive: true },
+  { name: 'fleurs', isActive: true },
+  { name: 'Mouchoirs', isActive: true },
+  { name: 'Présentoirs', isActive: true },
+  { name: 'Amballage', isActive: true },
+  { name: 'Ballons', isActive: true },
+  { name: 'Boîtes et coffret', isActive: true },
+  { name: 'Autres', isActive: true },
 ];
 
 @Injectable()

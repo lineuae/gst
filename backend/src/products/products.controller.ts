@@ -71,13 +71,13 @@ export class ProductsController {
     return { imagePath: dataUrl };
   }
 
-  @Roles(UserRole.Manager)
+  @Roles(UserRole.Manager, UserRole.Admin, UserRole.Staff)
   @Get()
   findAll() {
     return this.productsService.findAll();
   }
 
-  @Roles(UserRole.Manager)
+  @Roles(UserRole.Manager, UserRole.Admin, UserRole.Staff)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
