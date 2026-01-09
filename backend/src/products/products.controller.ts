@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -18,6 +19,8 @@ import { RolesGuard } from '../auth/roles.guard';
 import { UserRole } from '../users/schemas/user.schema';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
+import { StockService } from '../stock/stock.service';
+import { StockMovementType } from '../stock/schemas/stock-movement.schema';
 import sharp from 'sharp';
 
 class CreateProductDto {
@@ -25,6 +28,7 @@ class CreateProductDto {
   price: number;
   imageUrl?: string;
   description?: string;
+  initialQuantity?: number;
 }
 
 class UpdateProductDto {
@@ -38,12 +42,28 @@ class UpdateProductDto {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly stockService: StockService,
+  ) {}
 
   @Roles(UserRole.Manager)
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.productsService.create(dto);
+  async create(@Body() dto: CreateProductDto, @Req() req: any) {
+    const { initialQuantity, ...productData } = dto;
+    const product = await this.productsService.create(productData);
+
+    if (initialQuantity && initialQuantity !== 0) {
+      await this.stockService.addMovement({
+        productId: product._id.toString(),
+        quantity: initialQuantity,
+        type: StockMovementType.ManualAdjustment,
+        userId: req?.user?.userId,
+        note: 'Stock initial',
+      });
+    }
+
+    return product;
   }
 
   @Roles(UserRole.Manager)

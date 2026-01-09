@@ -67,10 +67,15 @@ export default function ProductsPage() {
     price: "",
     description: "",
     categoryId: "",
+    initialQuantity: "",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
+
+  const [stockByProduct, setStockByProduct] = useState<Record<string, number>>({});
+  const [stockDeltaByProduct, setStockDeltaByProduct] = useState<Record<string, string>>({});
+  const [stockNoteByProduct, setStockNoteByProduct] = useState<Record<string, string>>({});
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -107,10 +112,31 @@ export default function ProductsPage() {
       }
       const data = await res.json();
       setProducts(data);
+      // charger le stock courant pour chaque produit
+      data.forEach((p: Product) => {
+        fetchCurrentStock(p._id);
+      });
     } catch (err: any) {
       setError(err.message || "Erreur inconnue");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentStock = async (productId: string) => {
+    if (!token || !productId) return;
+    try {
+      const res = await fetch(`${API_BASE}/stock/product/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        throw new Error("Impossible de charger le stock");
+      }
+      const data = await res.json();
+      const value = typeof data === "number" ? data : Number(data);
+      setStockByProduct((prev) => ({ ...prev, [productId]: value }));
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue");
     }
   };
 
@@ -153,6 +179,25 @@ export default function ProductsPage() {
         setError("Le prix saisi est invalide. Utilisez un nombre (ex: 1500 ou 1500.5).");
         return;
       }
+      const normalizedInitialQty =
+        form.initialQuantity && form.initialQuantity.trim() !== ""
+          ? Number(
+              form.initialQuantity
+                .toString()
+                .replace(',', '.')
+                .trim(),
+            )
+          : undefined;
+      if (
+        normalizedInitialQty !== undefined &&
+        (isNaN(normalizedInitialQty) || normalizedInitialQty < 0)
+      ) {
+        setError(
+          "La quantité initiale est invalide. Utilisez un nombre positif (ex: 10).",
+        );
+        return;
+      }
+
       let imageUrl: string | undefined = undefined;
       if (imageFile) {
         const fd = new FormData();
@@ -182,13 +227,23 @@ export default function ProductsPage() {
           imageUrl,
           description: form.description || undefined,
           categoryId: form.categoryId || undefined,
+          initialQuantity:
+            normalizedInitialQty !== undefined && normalizedInitialQty !== 0
+              ? normalizedInitialQty
+              : undefined,
         }),
       });
       if (!res.ok) {
         const text = await res.text();
         throw new Error(text || "Erreur lors de la création du produit");
       }
-      setForm({ name: "", price: "", description: "", categoryId: "" });
+      setForm({
+        name: "",
+        price: "",
+        description: "",
+        categoryId: "",
+        initialQuantity: "",
+      });
       setImageFile(null);
       await fetchProducts();
     } catch (err: any) {
@@ -374,6 +429,20 @@ export default function ProductsPage() {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-slate-700">
+                Quantité initiale (optionnel)
+              </label>
+              <input
+                type="number"
+                value={form.initialQuantity}
+                onChange={(e) =>
+                  setForm({ ...form, initialQuantity: e.target.value })
+                }
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                placeholder="0"
+              />
+            </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-700">
                 Photo du produit (optionnel)
@@ -455,6 +524,7 @@ export default function ProductsPage() {
                   <tr>
                     <th className="px-3 py-2">Produit</th>
                     <th className="px-3 py-2">Prix</th>
+                    <th className="px-3 py-2">Stock</th>
                     <th className="px-3 py-2">Actif</th>
                     <th className="px-3 py-2">Actions</th>
                   </tr>
@@ -548,6 +618,61 @@ export default function ProductsPage() {
                         ) : (
                           <span>{p.price.toFixed(2)} FCFA</span>
                         )}
+                      </td>
+                      <td className="px-3 py-2 text-slate-700">
+                        {(() => {
+                          const currentStock = stockByProduct[p._id];
+                          const delta = stockDeltaByProduct[p._id] ?? "";
+                          const note = stockNoteByProduct[p._id] ?? "";
+                          return (
+                            <div className="flex flex-col gap-1 text-xs">
+                              <div>
+                                Stock actuel :{" "}
+                                {currentStock === undefined ? (
+                                  <span className="italic text-slate-400">
+                                    ...
+                                  </span>
+                                ) : (
+                                  <span className="font-semibold">
+                                    {currentStock}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <input
+                                  type="number"
+                                  value={delta}
+                                  onChange={(e) =>
+                                    setStockDeltaByProduct((prev) => ({
+                                      ...prev,
+                                      [p._id]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-md border border-slate-300 px-2 py-1 text-[11px] focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                                  placeholder="+5 ou -3"
+                                />
+                                <input
+                                  value={note}
+                                  onChange={(e) =>
+                                    setStockNoteByProduct((prev) => ({
+                                      ...prev,
+                                      [p._id]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-md border border-slate-300 px-2 py-1 text-[11px] focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+                                  placeholder="Note (optionnel)"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleInlineStockAdjust(p._id)}
+                                  className="inline-flex items-center justify-center rounded-md bg-slate-900 px-2 py-1 text-[11px] font-medium text-white shadow-sm hover:bg-slate-800"
+                                >
+                                  Ajuster
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-2 text-slate-700">
                         {editingId === p._id ? (

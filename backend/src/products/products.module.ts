@@ -10,6 +10,7 @@ import {
 } from './schemas/product-category.schema';
 import { ProductCategoriesService } from './product-categories.service';
 import { ProductCategoriesController } from './product-categories.controller';
+import { StockModule } from '../stock/stock.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProductCategoriesController } from './product-categories.controller';
       { name: Product.name, schema: ProductSchema },
       { name: ProductCategory.name, schema: ProductCategorySchema },
     ]),
+    StockModule,
   ],
   providers: [ProductsService, ProductCategoriesService, RolesGuard],
   controllers: [ProductsController, ProductCategoriesController],
