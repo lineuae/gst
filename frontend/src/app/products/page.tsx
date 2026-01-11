@@ -338,6 +338,43 @@ export default function ProductsPage() {
     }
   };
 
+  const handleInlineStockAdjust = async (productId: string) => {
+    if (!token) return;
+    const delta = stockDeltaByProduct[productId];
+    const note = stockNoteByProduct[productId];
+    if (!delta || delta.trim() === "") return;
+    setError(null);
+    try {
+      const quantity = Number(delta);
+      if (!quantity || isNaN(quantity)) {
+        setError(
+          "La quantité de stock est invalide. Utilisez un nombre (ex: 5 ou -3).",
+        );
+        return;
+      }
+      const res = await fetch(`${API_BASE}/stock/adjust`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId,
+          quantity,
+          note: note || undefined,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error("Erreur lors de l'ajustement du stock");
+      }
+      setStockDeltaByProduct((prev) => ({ ...prev, [productId]: "" }));
+      setStockNoteByProduct((prev) => ({ ...prev, [productId]: "" }));
+      await fetchCurrentStock(productId);
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue");
+    }
+  };
+
   if (!ready) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
